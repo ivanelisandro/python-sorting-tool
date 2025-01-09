@@ -1,7 +1,7 @@
 # Stage 1:
 
 Focus on stage 1 is processing integer inputs indefinitely.
-The program should end when the user enters Ctrl+D (Windows 11).
+The program should end when the user enters Ctrl+Z or Ctrl+D (Windows 11, depends on how you are running the script).
 
 **Objectives:**
 

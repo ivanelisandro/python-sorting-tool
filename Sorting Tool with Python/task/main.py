@@ -1,17 +1,33 @@
-all_numbers = []
+from processors import ProcessorFactory
+import sys
+
+class ArgumentParser:
+    datatype_pattern = "-dataType"
+
+    def __init__(self):
+        self.datatype = "word"
+        self.arguments = sys.argv[1:] if len(sys.argv) > 2 else None
+
+    def process(self):
+        if not self.arguments:
+            return
+
+        for index, argument in enumerate(self.arguments):
+            if argument == self.datatype_pattern:
+                self.datatype = self.arguments[index + 1]
+
+
+parser = ArgumentParser()
+parser.process()
+
+factory = ProcessorFactory()
+processor = factory.create(parser.datatype)
 
 while True:
     try:
         data = input()
-        items = data.split()
-        for item in items:
-            all_numbers.append(int(item))
+        processor.process(data)
     except EOFError:
         break
 
-total = len(all_numbers)
-greatest = max(all_numbers)
-greatest_count = all_numbers.count(greatest)
-
-print(f"Total numbers: {total}.")
-print(f"The greatest number: {greatest} ({greatest_count} time(s)).")
+processor.print_summary()
