@@ -12,6 +12,12 @@ files:
   - name: tests.py
     visible: false
     learner_created: false
-feedback_link: https://hyperskill.org/projects/307/stages/1721/implement#comment
-status: Unchecked
+  - name: stage1.md
+    visible: true
+    learner_created: true
+feedback_link: https://hyperskill.org/learn/step/24271#comment
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Thu, 09 Jan 2025 18:13:57 UTC"
 record: -1
