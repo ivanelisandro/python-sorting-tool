@@ -1,27 +1,42 @@
 from abc import ABC, abstractmethod
 
 
+class ProcessorOutputs:
+    """
+    Defines the types of outputs available.
+    """
+    summary = "summary"
+    sorted_items = "sorted"
+
+
 class Processor(ABC):
     """
     Abstract class for processing some type of data.
     """
+    def __init__(self):
+        self.outputs = {}
+
     @abstractmethod
     def process(self, current_input):
         """
-        Abstract method, must be implemented in child class
+        Abstract method, must be implemented in child class.
         """
         pass
 
-    @abstractmethod
-    def print_summary(self):
+    def print(self, output_type:str):
         """
-        Abstract method, must be implemented in child class
+        Prints the output according to the type required by the application.
+        :param output_type: Must be one of the ProcessorOutputs.
         """
-        pass
+        if output_type in self.outputs:
+            self.outputs[output_type]()
 
 class IntegerProcessor(Processor):
     def __init__(self):
+        super().__init__()
         self.numbers = []
+        self.outputs[ProcessorOutputs.summary] = self.print_summary
+        self.outputs[ProcessorOutputs.sorted_items] = self.print_sorted
 
     def process(self, current_input):
         items = current_input.split()
@@ -37,15 +52,20 @@ class IntegerProcessor(Processor):
         print(f"Total numbers: {total}.")
         print(f"The greatest number: {greatest} ({greatest_count} time(s), {rate}%).")
 
+    def print_sorted(self):
+        self.numbers.sort()
+        total = len(self.numbers)
+        sorted_numbers = " ".join(str(number) for number in self.numbers)
+        print(f"Total numbers: {total}.")
+        print(f"Sorted data: {sorted_numbers}")
+
 
 class StringProcessor(Processor):
     def __init__(self):
+        super().__init__()
         self.contents = []
 
     def process(self, current_input):
-        pass
-
-    def print_summary(self):
         pass
 
     def calculate_statistics(self):
@@ -60,6 +80,7 @@ class StringProcessor(Processor):
 class LineProcessor(StringProcessor):
     def __init__(self):
         super().__init__()
+        self.outputs[ProcessorOutputs.summary] = self.print_summary
 
     def process(self, current_input):
         self.contents.append(current_input)
@@ -77,6 +98,7 @@ class LineProcessor(StringProcessor):
 class WordProcessor(StringProcessor):
     def __init__(self):
         super().__init__()
+        self.outputs[ProcessorOutputs.summary] = self.print_summary
 
     def process(self, current_input):
         items = current_input.split()
@@ -91,15 +113,32 @@ class WordProcessor(StringProcessor):
         print(f"The longest word: {" ".join(elements)} ({longest_count} time(s), {rate}%).")
 
 
+class ProcessorTypes:
+    """
+    Defines the types of data processing available.
+    """
+    integer = "long"
+    line = "line"
+    word = "word"
+
+
 class ProcessorFactory:
+    """
+    A helper class to create instances of Processor.
+    """
     def __init__(self):
         self.processors = {
-            "long": IntegerProcessor,
-            "line": LineProcessor,
-            "word": WordProcessor,
+            ProcessorTypes.integer: IntegerProcessor,
+            ProcessorTypes.line: LineProcessor,
+            ProcessorTypes.word: WordProcessor,
         }
 
-    def create(self, datatype:str):
+    def create(self, datatype:str) -> Processor | None:
+        """
+        Creates and instance of processor if the datatype is valid.
+        :param datatype: Represents the type of data to be processed, must be one of the ProcessorTypes.
+        :return: A new Processor if datatype is valid, None otherwise.
+        """
         if datatype not in self.processors:
             return None
 
