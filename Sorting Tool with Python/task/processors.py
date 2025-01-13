@@ -6,7 +6,8 @@ class ProcessorOutputs:
     Defines the types of outputs available.
     """
     summary = "summary"
-    sorted_items = "sorted"
+    sorted = "natural"
+    sorted_count = "byCount"
 
 
 class Processor(ABC):
@@ -14,7 +15,14 @@ class Processor(ABC):
     Abstract class for processing some type of data.
     """
     def __init__(self):
-        self.outputs = {}
+        self.outputs = {
+            ProcessorOutputs.summary: self.print_summary,
+            ProcessorOutputs.sorted: self.print_sorted,
+            ProcessorOutputs.sorted_count: self.print_sorted_count,
+        }
+        self.item_type = None
+        self.superlative = None
+        self.items = []
 
     @abstractmethod
     def process(self, current_input):
@@ -22,6 +30,40 @@ class Processor(ABC):
         Abstract method, must be implemented in child class.
         """
         pass
+
+    @abstractmethod
+    def get_max(self):
+        """
+        Abstract method, must be implemented in child class.
+        """
+        pass
+
+    @abstractmethod
+    def format_max(self):
+        """
+        Abstract method, must be implemented in child class.
+        """
+        pass
+
+    @abstractmethod
+    def get_max_count(self):
+        """
+        Abstract method, must be implemented in child class.
+        """
+        pass
+
+    @abstractmethod
+    def format_sorted(self):
+        """
+        Abstract method, must be implemented in child class.
+        """
+        pass
+
+    def get_rate(self, counted):
+        """
+        Calculates the rate of occurrence for a counted item.
+        """
+        return int(counted * 100 / len(self.items))
 
     def print(self, output_type:str):
         """
@@ -31,86 +73,144 @@ class Processor(ABC):
         if output_type in self.outputs:
             self.outputs[output_type]()
 
-class IntegerProcessor(Processor):
-    def __init__(self):
-        super().__init__()
-        self.numbers = []
-        self.outputs[ProcessorOutputs.summary] = self.print_summary
-        self.outputs[ProcessorOutputs.sorted_items] = self.print_sorted
-
-    def process(self, current_input):
-        items = current_input.split()
-        for item in items:
-            self.numbers.append(int(item))
+    def print_total(self):
+        """
+        Prints the total number of items being processed.
+        :return:
+        """
+        print(f"Total {self.item_type}s: {len(self.items)}.")
 
     def print_summary(self):
-        total = len(self.numbers)
-        greatest = max(self.numbers)
-        greatest_count = self.numbers.count(greatest)
-        rate = int(greatest_count * 100 / total)
-
-        print(f"Total numbers: {total}.")
-        print(f"The greatest number: {greatest} ({greatest_count} time(s), {rate}%).")
+        """
+        Prints the summarized information of the processed items.
+        """
+        count = self.get_max_count()
+        rate = self.get_rate(count)
+        self.print_total()
+        print(f"The {self.superlative} {self.item_type}:"
+              f"{self.format_max()}"
+              f"({count} time(s), {rate}%).")
 
     def print_sorted(self):
-        self.numbers.sort()
-        total = len(self.numbers)
-        sorted_numbers = " ".join(str(number) for number in self.numbers)
-        print(f"Total numbers: {total}.")
-        print(f"Sorted data: {sorted_numbers}")
+        """
+        Prints the sorted items.
+        """
+        self.print_total()
+        print(f"Sorted data:{self.format_sorted()}")
+
+    def print_sorted_count(self):
+        """
+        Prints the items sorted by repetition rate.
+        """
+        self.print_total()
+        unique_elements = set(self.items)
+        counted_elements = [(self.items.count(element), element) for element in unique_elements]
+        counted_elements.sort()
+
+        for count, element in counted_elements:
+            print(f"{element}: {count} time(s), {self.get_rate(count)}%")
+
+
+class IntegerProcessor(Processor):
+    """
+    Specific processor for sorting integer data.
+    """
+    def __init__(self):
+        super().__init__()
+        self.item_type = "number"
+        self.superlative = "greatest"
+
+    def process(self, current_input):
+        input_items = current_input.split()
+        for item in input_items:
+            self.items.append(int(item))
+
+    def get_max(self):
+        return max(self.items)
+
+    def format_max(self):
+        return f" {self.get_max()} "
+
+    def get_max_count(self):
+        return self.items.count(self.get_max())
+
+    def format_sorted(self):
+        self.items.sort()
+        formatted_items = " ".join(str(number) for number in self.items)
+        return f" {formatted_items}"
 
 
 class StringProcessor(Processor):
+    """
+    Specific processor for common text data.
+    """
     def __init__(self):
         super().__init__()
-        self.contents = []
+        self.superlative = "longest"
 
     def process(self, current_input):
         pass
 
-    def calculate_statistics(self):
-        total = len(self.contents)
-        longest = max([len(content) for content in self.contents])
-        longest_elements = [content for content in self.contents if len(content) == longest]
-        longest_count = len(longest_elements)
-        rate = int(longest_count * 100 / total)
-        return total, longest, longest_elements, longest_count, rate
+    def get_max(self):
+        longest_size = max([len(text) for text in self.items])
+        return [text for text in self.items if len(text) == longest_size]
+
+    def format_max(self):
+        pass
+
+    def get_max_count(self):
+        return len(self.get_max())
+
+    def format_sorted(self):
+        pass
 
 
 class LineProcessor(StringProcessor):
+    """
+    Specific processor for sorting lines of text.
+    """
     def __init__(self):
         super().__init__()
-        self.outputs[ProcessorOutputs.summary] = self.print_summary
+        self.item_type = "line"
 
     def process(self, current_input):
-        self.contents.append(current_input)
+        self.items.append(current_input)
 
-    def print_summary(self):
-        (total, longest, elements, longest_count, rate) = self.calculate_statistics()
-
+    def format_max(self):
+        elements = self.get_max()
         elements.sort()
-        print(f"Total lines: {total}.")
-        print(f"The longest line:")
-        print(*elements, sep='\n')
-        print(f"({longest_count} time(s), {rate}%).")
+        formatted_elements = "\n".join(elements)
+        return f"\n{formatted_elements}\n"
+
+    def format_sorted(self):
+        self.items.sort()
+        formatted_items = "\n".join(self.items)
+        return f"\n{formatted_items}"
 
 
 class WordProcessor(StringProcessor):
+    """
+    Specific processor for sorting words from the input.
+    """
     def __init__(self):
         super().__init__()
-        self.outputs[ProcessorOutputs.summary] = self.print_summary
+        self.item_type = "word"
 
     def process(self, current_input):
-        items = current_input.split()
-        for item in items:
-            self.contents.append(item)
+        input_items = current_input.split()
+        for item in input_items:
+            self.items.append(item)
 
-    def print_summary(self):
-        (total, longest, elements, longest_count, rate) = self.calculate_statistics()
-
+    def format_max(self):
+        elements = self.get_max()
         elements.sort()
-        print(f"Total words: {total}.")
-        print(f"The longest word: {" ".join(elements)} ({longest_count} time(s), {rate}%).")
+        formatted_elements = " ".join(elements)
+        return f" {formatted_elements} "
+
+    def format_sorted(self):
+        self.items.sort()
+        formatted_items = " ".join(self.items)
+        return f" {formatted_items}"
 
 
 class ProcessorTypes:
