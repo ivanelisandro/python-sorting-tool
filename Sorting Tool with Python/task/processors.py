@@ -1,13 +1,5 @@
 from abc import ABC, abstractmethod
-
-
-class ProcessorOutputs:
-    """
-    Defines the types of outputs available.
-    """
-    summary = "summary"
-    sorted = "natural"
-    sorted_count = "byCount"
+from validation import ProcessorOutputs, ProcessorTypes
 
 
 class Processor(ABC):
@@ -123,7 +115,12 @@ class IntegerProcessor(Processor):
     def process(self, current_input):
         input_items = current_input.split()
         for item in input_items:
-            self.items.append(int(item))
+            try:
+                number = int(item)
+                self.items.append(number)
+            except ValueError:
+                print(f"\"{item}\" is not a long. It will be skipped.")
+
 
     def get_max(self):
         return max(self.items)
@@ -211,15 +208,6 @@ class WordProcessor(StringProcessor):
         self.items.sort()
         formatted_items = " ".join(self.items)
         return f" {formatted_items}"
-
-
-class ProcessorTypes:
-    """
-    Defines the types of data processing available.
-    """
-    integer = "long"
-    line = "line"
-    word = "word"
 
 
 class ProcessorFactory:

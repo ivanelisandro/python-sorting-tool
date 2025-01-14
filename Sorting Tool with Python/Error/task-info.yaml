@@ -13,6 +13,33 @@ files:
   - name: tests.py
     visible: false
     learner_created: false
+  - name: processors.py
+    visible: true
+    learner_created: true
+  - name: stage4.md
+    visible: true
+    learner_created: true
+  - name: stage3.md
+    visible: true
+    learner_created: true
+  - name: stage2.md
+    visible: true
+    learner_created: true
+  - name: stage1.md
+    visible: true
+    learner_created: true
+  - name: stage5.md
+    visible: true
+    learner_created: true
+  - name: validation.py
+    visible: true
+    learner_created: true
+  - name: arguments.py
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/learn/step/24275#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Tue, 14 Jan 2025 04:13:05 UTC"
 record: -1
