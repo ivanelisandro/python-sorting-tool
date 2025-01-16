@@ -4,7 +4,7 @@ hyperskill_project:
   is_template_based: false
   use_ide: true
   environment: unittest
-update_date: "Tue, 14 Jan 2025 02:29:08 UTC"
+update_date: "Wed, 15 Jan 2025 22:53:22 UTC"
 stages:
   - id: 1721
     step: 24271
@@ -23,7 +23,7 @@ stages:
     is_completed: true
   - id: 1726
     step: 24276
-    is_completed: false
+    is_completed: true
 topics:
   0:
     - title: Introduction to Python

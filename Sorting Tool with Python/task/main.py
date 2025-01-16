@@ -5,18 +5,13 @@ from processors import ProcessorFactory
 parser = ArgumentParser()
 parser.process()
 
-datatype, output = parser.get_options_values()
+datatype, output, input_path, output_path = parser.get_options_values()
 if not datatype or not output:
     exit()
 
 factory = ProcessorFactory()
-processor = factory.create(datatype)
+processor = factory.create(datatype, output, input_path, output_path)
 
-while True:
-    try:
-        data = input()
-        processor.process(data)
-    except EOFError:
-        break
-
-processor.print(output)
+if processor:
+    processor.load_data()
+    processor.write_data()

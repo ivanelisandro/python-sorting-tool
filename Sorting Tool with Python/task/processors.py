@@ -1,12 +1,19 @@
+import sys
 from abc import ABC, abstractmethod
+from io import StringIO
 from validation import ProcessorOutputs, ProcessorTypes
+import os
 
 
 class Processor(ABC):
     """
     Abstract class for processing some type of data.
     """
-    def __init__(self):
+    def __init__(self, output_type:str, input_path:str, output_path:str):
+        self.output_type = output_type
+        self.input_path = input_path
+        self.output_path = output_path
+        self.log = StringIO()
         self.outputs = {
             ProcessorOutputs.summary: self.print_summary,
             ProcessorOutputs.sorted: self.print_sorted,
@@ -19,37 +26,87 @@ class Processor(ABC):
     @abstractmethod
     def process(self, current_input):
         """
-        Abstract method, must be implemented in child class.
+        Processes a given line of input.
         """
         pass
 
     @abstractmethod
     def get_max(self):
         """
-        Abstract method, must be implemented in child class.
+        Gets the maximum value of all input content.
+        For integers: the greatest number.
+        For text: the longest words or lines.
         """
         pass
 
     @abstractmethod
     def format_max(self):
         """
-        Abstract method, must be implemented in child class.
+        Formats the maximum values into a string for output.
         """
         pass
 
     @abstractmethod
     def get_max_count(self):
         """
-        Abstract method, must be implemented in child class.
+        Gets the count of repetitions of the maximum value.
         """
         pass
 
     @abstractmethod
     def format_sorted(self):
         """
-        Abstract method, must be implemented in child class.
+        Formats the sorted output into a string for output.
         """
         pass
+
+    def load_data(self):
+        if not self.input_path or not os.path.isfile(self.input_path):
+            self.read_from_input()
+            return
+
+        self.read_from_file()
+
+    def write_data(self):
+        """
+        Writes the output data according to the type required by the application.
+        """
+        if self.output_type in self.outputs:
+            self.outputs[self.output_type]()
+
+        if self.output_path:
+            with open(self.output_path, "w", encoding="utf-8") as file:
+                file.write(self.log.getvalue())
+
+
+    def write_line(self, line:str):
+        """
+        Writes a line of output to the processor output_path definition (including a new line at the end)
+        :param line: The content to be written.
+        """
+        print(line)
+        print(line, file=self.log)
+
+    def read_from_input(self):
+        """
+        Reads a line from the standard input and processes it.
+        Breaks execution when an EOF character entered by the user.
+        """
+        while True:
+            try:
+                data = input()
+                self.process(data)
+            except EOFError:
+                break
+
+    def read_from_file(self):
+        """
+        Reads all the inputs from a file and processes it.
+        :return:
+        """
+        with open(self.input_path,"r", encoding="utf-8" ) as file:
+            for line in file.readlines():
+                self.process(line)
 
     def get_rate(self, counted):
         """
@@ -57,20 +114,12 @@ class Processor(ABC):
         """
         return int(counted * 100 / len(self.items))
 
-    def print(self, output_type:str):
-        """
-        Prints the output according to the type required by the application.
-        :param output_type: Must be one of the ProcessorOutputs.
-        """
-        if output_type in self.outputs:
-            self.outputs[output_type]()
-
     def print_total(self):
         """
         Prints the total number of items being processed.
         :return:
         """
-        print(f"Total {self.item_type}s: {len(self.items)}.")
+        self.write_line(f"Total {self.item_type}s: {len(self.items)}.")
 
     def print_summary(self):
         """
@@ -88,7 +137,7 @@ class Processor(ABC):
         Prints the sorted items.
         """
         self.print_total()
-        print(f"Sorted data:{self.format_sorted()}")
+        self.write_line(f"Sorted data:{self.format_sorted()}")
 
     def print_sorted_count(self):
         """
@@ -100,15 +149,15 @@ class Processor(ABC):
         counted_elements.sort()
 
         for count, element in counted_elements:
-            print(f"{element}: {count} time(s), {self.get_rate(count)}%")
+            self.write_line(f"{element}: {count} time(s), {self.get_rate(count)}%")
 
 
 class IntegerProcessor(Processor):
     """
     Specific processor for sorting integer data.
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, output_type:str, input_path:str, output_path:str):
+        super().__init__(output_type, input_path, output_path)
         self.item_type = "number"
         self.superlative = "greatest"
 
@@ -119,7 +168,7 @@ class IntegerProcessor(Processor):
                 number = int(item)
                 self.items.append(number)
             except ValueError:
-                print(f"\"{item}\" is not a long. It will be skipped.")
+                self.write_line(f"\"{item}\" is not a long. It will be skipped.")
 
 
     def get_max(self):
@@ -141,8 +190,8 @@ class StringProcessor(Processor):
     """
     Specific processor for common text data.
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, output_type:str, input_path:str, output_path:str):
+        super().__init__(output_type, input_path, output_path)
         self.superlative = "longest"
 
     def process(self, current_input):
@@ -166,8 +215,8 @@ class LineProcessor(StringProcessor):
     """
     Specific processor for sorting lines of text.
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, output_type:str, input_path:str, output_path:str):
+        super().__init__(output_type, input_path, output_path)
         self.item_type = "line"
 
     def process(self, current_input):
@@ -189,8 +238,8 @@ class WordProcessor(StringProcessor):
     """
     Specific processor for sorting words from the input.
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, output_type:str, input_path:str, output_path:str):
+        super().__init__(output_type, input_path, output_path)
         self.item_type = "word"
 
     def process(self, current_input):
@@ -221,13 +270,17 @@ class ProcessorFactory:
             ProcessorTypes.word: WordProcessor,
         }
 
-    def create(self, datatype:str) -> Processor | None:
+    def create(self, datatype:str, output_type:str, input_path:str, output_path:str) -> Processor | None:
         """
         Creates and instance of processor if the datatype is valid.
         :param datatype: Represents the type of data to be processed, must be one of the ProcessorTypes.
+        :param input_path: Represents a file path to read the input from. If empty, the standard input is used.
+        :param output_path: Represents a file path to write the output to. If empty, the standard output is used.
+        :param output_path: Represents a file path to write the output to. If empty, the standard output is used.
+        :param output_type: Must be one of the ProcessorOutputs.
         :return: A new Processor if datatype is valid, None otherwise.
         """
         if datatype not in self.processors:
             return None
 
-        return self.processors[datatype]()
+        return self.processors[datatype](output_type, input_path, output_path)
